@@ -237,11 +237,10 @@ def register(request):
                                                                                        default=None),
                                                       user_class=User,
                                                       request=request))
-            print(params)
             with transaction.manager:
                 user = User(email=params['email'].lower(),
                             display_name=params['name'],
-                            status='unconfirmed')
+                            status='active')
                 user.new_password(params['password'])
                 dbsession.add(user)
             with transaction.manager:
