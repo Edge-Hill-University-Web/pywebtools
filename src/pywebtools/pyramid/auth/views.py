@@ -204,8 +204,15 @@ class RegisterSchema(CSRFSchema):
     name = validators.UnicodeString(not_empty=True)
     """Name of the registering user"""
 
+    """The :class:`~pywebtools.pyramid.auth.ResetPasswordSchema` handles the validation of
+    password reset requests."""
+    password = validators.UnicodeString(not_empty=True)
+    """New password"""
+    password_confirm = validators.UnicodeString(not_empty=True)
+    """Updated password""" 
+   
     chained_validators = [validators.FieldsMatch('email',
-                                                 'email_confirm')]
+                                                 'email_confirm'), validators.FieldsMatch('password', 'password_confirm')]
 
 
 @current_user()
@@ -230,10 +237,12 @@ def register(request):
                                                                                        default=None),
                                                       user_class=User,
                                                       request=request))
+            print(params)
             with transaction.manager:
                 user = User(email=params['email'].lower(),
                             display_name=params['name'],
                             status='unconfirmed')
+                user.new_password(params['password'])
                 dbsession.add(user)
             with transaction.manager:
                 dbsession.add(user)
@@ -247,6 +256,7 @@ def register(request):
                 active_callbacks['user.created'](request, user, token)
             redirect(request, 'user.register')
         except Invalid as e:
+            print(e)
             return {'errors': e.error_dict,
                     'values': request.params,
                     'crumbs': [{'title': 'Login', 'url': request.route_url('user.login')},
